@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Шахматы 2 на 2</title>
+<meta name="description" content="Шахматы вчетвером на одной доске: двое за белых, двое за чёрных, партнёры ходят по очереди.">
+<meta name="theme-color" content="#E8ECEF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11161B" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='8' height='8' fill='%238299AC'/%3E%3Crect x='8' y='8' width='8' height='8' fill='%238299AC'/%3E%3Crect x='8' width='8' height='8' fill='%23DDE4E9'/%3E%3Crect y='8' width='8' height='8' fill='%23DDE4E9'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&text=%E2%99%94%E2%99%95%E2%99%96%E2%99%97%E2%99%98%E2%99%99%E2%99%9A%E2%99%9B%E2%99%9C%E2%99%9D%E2%99%9E%E2%99%9F&display=block">
+<style>
+/* Раскладка: турнирный зал — доска в центре внимания, игроки сторон над и под доской, протокол партии справа (на телефоне — ниже). */
+:root {
+  --bg: #E8ECEF;
+  --surface: #F7F9FA;
+  --ink: #18212B;
+  --muted: #5B6875;
+  --line: #CBD3DA;
+  --sq-light: #DDE4E9;
+  --sq-dark: #8299AC;
+  --brass: #A86A0C;
+  --brass-soft: rgba(212, 150, 40, .42);
+  --danger: #C23B34;
+  --ok: #2E8B57;
+  --piece-dark: #1B232C;
+  --piece-light: #FFFFFF;
+  --shadow: 0 1px 2px rgba(24, 33, 43, .08), 0 8px 24px rgba(24, 33, 43, .08);
+
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-body: "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --f-piece: "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161B; --surface: #1A2128; --ink: #E6EBEF; --muted: #8D9AA6; --line: #2C363F;
+    --sq-light: #A3B4C2; --sq-dark: #5A6E80; --brass: #E3A53D; --brass-soft: rgba(227, 165, 61, .45);
+    --danger: #E5675F; --ok: #4CB27A; --piece-dark: #151B21; --piece-light: #FFFFFF;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161B; --surface: #1A2128; --ink: #E6EBEF; --muted: #8D9AA6; --line: #2C363F;
+  --sq-light: #A3B4C2; --sq-dark: #5A6E80; --brass: #E3A53D; --brass-soft: rgba(227, 165, 61, .45);
+  --danger: #E5675F; --ok: #4CB27A; --piece-dark: #151B21; --piece-light: #FFFFFF;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.5 var(--f-body);
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  -webkit-tap-highlight-color: transparent;
+}
+[hidden] { display: none !important; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+.wrap {
+  max-width: 1080px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 8px;
+  padding: 9px 14px; font-weight: 500; min-height: 40px; white-space: nowrap;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+.btn.primary:hover { opacity: .9; }
+.btn.danger { color: var(--danger); }
+.btn.small { min-height: 32px; padding: 5px 10px; font-size: 13px; }
+.btn:disabled { opacity: .45; cursor: default; }
+
+/* ---------- Лобби ---------- */
+.landing { padding-block: clamp(32px, 9vh, 96px) 48px; display: grid; gap: 40px; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); align-items: center; }
+.landing h1 {
+  font: 700 clamp(40px, 8vw, 84px)/0.98 var(--f-display); letter-spacing: -.02em; margin: 0 0 20px;
+  text-wrap: balance;
+}
+.landing h1 .x { color: var(--brass); }
+.lead { font-size: 18px; color: var(--muted); max-width: 30em; margin: 0 0 28px; }
+.start { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.start .btn.primary { min-height: 52px; padding: 0 24px; font-size: 17px; }
+.joinform { display: flex; gap: 8px; flex: 1 1 260px; max-width: 360px; }
+.joinform input {
+  flex: 1; min-width: 0; min-height: 52px; padding: 0 14px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); font-family: var(--f-mono); font-size: 15px;
+}
+.joinform .btn { min-height: 52px; }
+.order-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; box-shadow: var(--shadow); }
+.order-card h2 { font: 600 12px/1 var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 16px; }
+.order { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 18px; }
+.order div {
+  border-radius: 10px; padding: 12px 6px 10px; text-align: center; border: 1px solid var(--line);
+  font: 500 13px/1.3 var(--f-body);
+}
+.order div b { display: block; font: 400 34px/1 var(--f-piece); margin-bottom: 6px; }
+.order .w { background: var(--sq-light); color: #18212B; border-color: transparent; }
+.order .b { background: var(--sq-dark); color: #fff; border-color: transparent; }
+.order .b b { color: #151B21; }
+.order-card ul { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; }
+
+/* ---------- Комната ---------- */
+.topbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-block: 12px; }
+.brand { font: 700 15px/1 var(--f-display); text-decoration: none; color: var(--ink); display: flex; align-items: center; gap: 8px; margin-right: auto; }
+.brand i { font-style: normal; color: var(--brass); }
+.code { font: 500 14px/1 var(--f-mono); letter-spacing: .08em; padding: 8px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+.lbl-short { display: none; }
+.conn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.conn::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+.conn.on::before { background: var(--ok); }
+
+.game { display: grid; grid-template-columns: minmax(0, auto) minmax(260px, 1fr); gap: 24px; align-items: start; padding-bottom: 32px; }
+.boardcol { display: grid; gap: 10px; width: var(--bsize); max-width: 100%; }
+:root { --bsize: clamp(280px, min(100vw - 32px, 100vh - 250px), 600px); }
+@supports (height: 100dvh) { :root { --bsize: clamp(280px, min(100vw - 32px, 100dvh - 250px), 600px); } }
+
+.side { display: flex; align-items: stretch; gap: 8px; }
+.side-label { font: 600 11px/1 var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; padding: 2px 0; }
+.seat {
+  flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  border-radius: 10px; background: var(--surface); border: 1px solid var(--line); min-height: 52px; position: relative;
+}
+.seat .ord { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 12px/1 var(--f-mono); border: 1px solid var(--line); color: var(--muted); }
+.seat .who { min-width: 0; flex: 1; display: grid; }
+.seat .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat .sub { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+.seat .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; }
+.seat .dot.on { background: var(--ok); opacity: 1; }
+.seat.empty { border-style: dashed; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.seat.empty:hover:not(:disabled) { border-color: var(--brass); background: var(--surface); }
+.seat.empty:disabled { cursor: default; opacity: .6; }
+.seat.empty .nm { color: var(--muted); font-weight: 500; }
+.seat.empty:hover:not(:disabled) .nm { color: var(--ink); }
+.seat.turn { border-color: var(--brass); box-shadow: 0 0 0 2px var(--brass-soft); }
+.seat.turn .ord { background: var(--brass); color: var(--surface); border-color: var(--brass); }
+.seat.me .nm::after { content: " (вы)"; font-weight: 400; color: var(--muted); }
+.nm-btn { all: unset; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.nm-btn:focus-visible { outline: 2px solid var(--brass); }
+
+.board {
+  position: relative; width: 100%; aspect-ratio: 1; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+  border-radius: 6px; overflow: hidden; box-shadow: var(--shadow); user-select: none; touch-action: manipulation;
+}
+.sq { all: unset; position: relative; display: grid; place-items: center; background: var(--sq-light); cursor: default; }
+.sq.dk { background: var(--sq-dark); }
+.sq.last::before { content: ""; position: absolute; inset: 0; background: var(--brass-soft); }
+.sq.sel::before { content: ""; position: absolute; inset: 0; background: var(--brass-soft); box-shadow: inset 0 0 0 3px var(--brass); }
+.sq.check::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, rgba(230, 40, 30, .85) 0%, rgba(230, 40, 30, .35) 55%, transparent 75%); }
+.sq.can { cursor: pointer; }
+.sq.tgt::after { content: ""; position: absolute; width: 30%; height: 30%; border-radius: 50%; background: rgba(20, 30, 40, .28); }
+.sq.tgt.cap::after { width: 86%; height: 86%; background: transparent; border: 5px solid rgba(20, 30, 40, .28); }
+.sq:focus-visible { outline: 3px solid var(--brass); outline-offset: -3px; z-index: 2; }
+.coord { position: absolute; font: 600 10px/1 var(--f-body); opacity: .75; pointer-events: none; }
+.coord.f { right: 3px; bottom: 2px; }
+.coord.r { left: 3px; top: 3px; }
+.sq .coord { color: var(--sq-dark); }
+.sq.dk .coord { color: var(--sq-light); }
+
+.pc { position: relative; z-index: 1; font: 400 calc(var(--bsize) / 8 * .78)/1 var(--f-piece); pointer-events: none; }
+.pc.b { color: var(--piece-dark); text-shadow: 0 1px 0 rgba(255, 255, 255, .25); }
+.pc.w { color: var(--piece-dark); }
+.pc.w::before { content: attr(data-fill); position: absolute; inset: 0; color: var(--piece-light); z-index: -1; }
+
+.promo { position: absolute; inset: 0; z-index: 5; background: rgba(10, 15, 20, .55); display: grid; place-items: center; }
+.promo-box { background: var(--surface); border-radius: 12px; padding: 14px; display: grid; gap: 10px; box-shadow: var(--shadow); text-align: center; }
+.promo-box p { margin: 0; font-weight: 600; }
+.promo-row { display: flex; gap: 8px; }
+.promo-row button { width: 64px; height: 64px; border-radius: 10px; border: 1px solid var(--line); background: var(--sq-light); display: grid; place-items: center; }
+.promo-row button:hover { border-color: var(--brass); }
+.promo-row .pc { font-size: 46px; }
+
+.panel { display: grid; gap: 16px; min-width: 0; }
+.status {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px;
+  display: grid; gap: 4px;
+}
+.status .big { font: 700 20px/1.25 var(--f-display); text-wrap: balance; }
+.status.mine { border-color: var(--brass); box-shadow: 0 0 0 2px var(--brass-soft); }
+.status .small { color: var(--muted); font-size: 14px; }
+.status .chk { color: var(--danger); font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.confirm span { font-weight: 500; margin-right: auto; }
+
+.moves { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.moves h3 { margin: 0; padding: 12px 14px; font: 600 12px/1 var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+.moves h3 span { letter-spacing: 0; text-transform: none; font-weight: 500; }
+.movelist { max-height: 300px; overflow-y: auto; padding: 6px 0; font-variant-numeric: tabular-nums; }
+.mrow { display: grid; grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr); padding: 3px 14px; align-items: baseline; }
+.mrow:nth-child(even) { background: color-mix(in srgb, var(--bg) 55%, transparent); }
+.mrow .n { color: var(--muted); font: 500 13px var(--f-mono); }
+.mv { min-width: 0; display: flex; gap: 6px; align-items: baseline; }
+.mv b { font: 500 14px var(--f-mono); }
+.mv small { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty-moves { padding: 14px; color: var(--muted); font-size: 14px; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* ---------- Диалоги и уведомления ---------- */
+.overlay { position: fixed; inset: 0; z-index: 20; background: rgba(10, 15, 20, .5); display: grid; place-items: center; padding: 16px; }
+.dialog { background: var(--surface); border-radius: 14px; padding: 22px; width: min(380px, 100%); box-shadow: var(--shadow); display: grid; gap: 14px; }
+.dialog h2 { margin: 0; font: 700 20px/1.2 var(--f-display); }
+.dialog p { margin: 0; color: var(--muted); }
+.dialog input { min-height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); font-size: 16px; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30;
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-weight: 500; max-width: calc(100% - 32px);
+  box-shadow: var(--shadow);
+}
+.linkbox { display: flex; gap: 8px; }
+.linkbox input { flex: 1; min-width: 0; font-family: var(--f-mono); font-size: 13px; }
+
+@media (max-width: 860px) {
+  .game { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  .panel { width: 100%; max-width: 600px; }
+  .landing { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+  .seat { padding: 6px 8px; gap: 8px; min-height: 48px; }
+  .seat .sub { font-size: 11px; }
+  .seat .ord { width: 20px; height: 20px; font-size: 11px; }
+  .seat.me .nm::after { content: none; }
+  .seat .btn.small { padding: 4px 8px; font-size: 12px; min-height: 28px; }
+  .topbar { gap: 8px; }
+  .topbar .lbl-long { display: none; }
+  .topbar .lbl-short { display: inline; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .seat, .status { transition: box-shadow .2s, border-color .2s; }
+}
+</style>
+</head>
+<body>
+
+<!-- Лобби -->
+<main id="landing" class="wrap landing" hidden>
+  <section>
+    <h1>Шахматы<br><span class="x">2</span> на <span class="x">2</span></h1>
+    <p class="lead">Одна доска, четыре игрока. Двое за белых, двое за чёрных, партнёры ходят по очереди. Создайте игру и отправьте ссылку друзьям.</p>
+    <div class="start">
+      <button class="btn primary" id="create" type="button">Создать игру</button>
+      <form class="joinform" id="joinform">
+        <input id="joincode" placeholder="Код или ссылка" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Код комнаты">
+        <button class="btn" type="submit">Войти</button>
+      </form>
+    </div>
+  </section>
+  <aside class="order-card" aria-label="Порядок ходов">
+    <h2>Порядок ходов</h2>
+    <div class="order">
+      <div class="w"><b>♔&#xFE0E;</b>Белые 1</div>
+      <div class="b"><b>♚&#xFE0E;</b>Чёрные 1</div>
+      <div class="w"><b>♔&#xFE0E;</b>Белые 2</div>
+      <div class="b"><b>♚&#xFE0E;</b>Чёрные 2</div>
+    </div>
+    <ul>
+      <li>Дальше по кругу, пока не будет мат, пат или ничья.</li>
+      <li>Если за стороной один игрок, он ходит за неё всегда — можно играть и вдвоём.</li>
+      <li>Все остальные по ссылке смотрят партию.</li>
+    </ul>
+  </aside>
+</main>
+
+<!-- Комната -->
+<div id="roomview" hidden>
+  <header class="wrap topbar">
+    <a class="brand" href="/">Шахматы <i>2×2</i></a>
+    <span class="conn" id="conn">подключение…</span>
+    <span class="code" id="code" title="Код комнаты"></span>
+    <button class="btn small" id="share" type="button"><span class="lbl-long">Скопировать ссылку</span><span class="lbl-short">Ссылка</span></button>
+  </header>
+  <main class="wrap game">
+    <div class="boardcol">
+      <div class="side" id="sideTop"></div>
+      <div class="board" id="board" role="grid" aria-label="Шахматная доска"></div>
+      <div class="side" id="sideBottom"></div>
+    </div>
+    <section class="panel">
+      <div class="status" id="status" aria-live="polite"></div>
+      <div class="actions" id="actions"></div>
+      <div class="confirm" id="confirm" hidden></div>
+      <div class="moves">
+        <h3>Ходы <span id="watchers"></span></h3>
+        <div class="movelist" id="movelist"></div>
+      </div>
+      <p class="hint">Нажмите на свою фигуру, затем на клетку, куда ходить. Перезагрузка страницы не страшна: вы вернётесь на своё место.</p>
+    </section>
+  </main>
+</div>
+
+<!-- Ввод имени -->
+<div class="overlay" id="nameDlg" hidden>
+  <form class="dialog" id="nameForm">
+    <h2>Как вас зовут?</h2>
+    <p>Имя увидят остальные игроки.</p>
+    <input id="nameInput" maxlength="20" autocomplete="nickname" required aria-label="Имя">
+    <button class="btn primary" type="submit">Готово</button>
+  </form>
+</div>
+
+<!-- Ссылка, если буфер обмена недоступен -->
+<div class="overlay" id="linkDlg" hidden>
+  <div class="dialog">
+    <h2>Ссылка на игру</h2>
+    <p>Скопируйте и отправьте друзьям.</p>
+    <div class="linkbox"><input id="linkInput" readonly aria-label="Ссылка"></div>
+    <button class="btn" type="button" id="linkClose">Закрыть</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="/rules.js"></script>
+<script>
+'use strict';
+(function () {
+  var GLYPH_SOLID = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
+  var GLYPH_OUTLINE = { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' };
+  var VS = '︎'; // текстовое начертание, чтобы iOS не рисовал эмодзи
+  var SIDE_NAME = { w: 'белые', b: 'чёрные' };
+  var SIDE_GEN = { w: 'белых', b: 'чёрных' };
+  var $ = function (id) { return document.getElementById(id); };
+
+  function store(key, val) {
+    try { if (val === undefined) return localStorage.getItem(key); localStorage.setItem(key, val); } catch (e) { return null; }
+  }
+  function randomString(n, alphabet) {
+    var a = new Uint8Array(n), s = '';
+    crypto.getRandomValues(a);
+    for (var i = 0; i < n; i++) s += alphabet[a[i] % alphabet.length];
+    return s;
+  }
+  var token = store('c22.token');
+  if (!token) { token = randomString(32, '0123456789abcdef'); store('c22.token', token); }
+  var myName = store('c22.name') || '';
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  var toastTimer;
+  function toast(text) {
+    var t = $('toast'); t.textContent = text; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+
+  // ---------- Маршрутизация ----------
+  var m = location.pathname.match(/^\/r\/([a-z0-9]{4,12})\/?$/i);
+  if (!m) return initLanding();
+  initRoom(m[1].toLowerCase());
+
+  function initLanding() {
+    $('landing').hidden = false;
+    $('create').onclick = function () {
+      location.href = '/r/' + randomString(6, 'abcdefghjkmnpqrstuvwxyz23456789');
+    };
+    $('joinform').onsubmit = function (e) {
+      e.preventDefault();
+      var v = $('joincode').value.trim().toLowerCase();
+      var mm = v.match(/\/r\/([a-z0-9]{4,12})/) || v.match(/^([a-z0-9]{4,12})$/);
+      if (!mm) return toast('Код — это 6 букв и цифр из ссылки');
+      location.href = '/r/' + mm[1];
+    };
+  }
+
+  // ---------- Комната ----------
+  function initRoom(roomId) {
+    var ws = null, connected = false, retry = 0, retryTimer = null;
+    var state = null, you = null, chess = null;
+    var selected = null, targets = [], pendingPromo = null, confirmKind = null;
+    var lastMoveCount = -1, audioCtx = null;
+
+    $('roomview').hidden = false;
+    $('code').textContent = roomId;
+    document.title = 'Комната ' + roomId + ' — Шахматы 2 на 2';
+
+    // Имя
+    function askName() {
+      $('nameInput').value = myName;
+      $('nameDlg').hidden = false;
+      setTimeout(function () { $('nameInput').focus(); }, 50);
+    }
+    $('nameForm').onsubmit = function (e) {
+      e.preventDefault();
+      var v = $('nameInput').value.trim().slice(0, 20);
+      if (!v) return;
+      myName = v; store('c22.name', v);
+      $('nameDlg').hidden = true;
+      send({ t: 'rename', name: v });
+    };
+    if (!myName) askName();
+
+    // Ссылка
+    $('share').onclick = function () {
+      var url = location.origin + '/r/' + roomId;
+      var done = function () { toast('Ссылка скопирована — отправьте её друзьям'); };
+      var fallback = function () {
+        $('linkInput').value = url; $('linkDlg').hidden = false;
+        $('linkInput').focus(); $('linkInput').select();
+      };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fallback);
+        else fallback();
+      } catch (e) { fallback(); }
+    };
+    $('linkClose').onclick = function () { $('linkDlg').hidden = true; };
+
+    // Соединение
+    function connect() {
+      clearTimeout(retryTimer);
+      var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+      ws = new WebSocket(proto + location.host + '/ws');
+      ws.onopen = function () {
+        connected = true; retry = 0; setConn();
+        send({ t: 'join', room: roomId, token: token, name: myName || undefined });
+      };
+      ws.onmessage = function (e) {
+        var msg; try { msg = JSON.parse(e.data); } catch (x) { return; }
+        if (msg.t === 'state') { state = msg.room; you = msg.you; onState(); }
+        else if (msg.t === 'error') toast(msg.msg || 'Ошибка');
+      };
+      ws.onclose = function () {
+        connected = false; setConn(); render();
+        var delay = Math.min(15000, 1000 * Math.pow(2, retry++));
+        retryTimer = setTimeout(connect, delay);
+      };
+      ws.onerror = function () { try { ws.close(); } catch (x) {} };
+    }
+    function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+    function setConn() {
+      var c = $('conn');
+      c.classList.toggle('on', connected);
+      c.textContent = connected ? 'онлайн' : 'переподключение…';
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && !connected && ws && ws.readyState === 3) { retry = 0; connect(); }
+      updateTitle();
+    });
+    connect();
+
+    // ---------- Производные данные ----------
+    function mySeat() {
+      if (!state) return null;
+      for (var s in state.seats) if (state.seats[s] && state.seats[s] === you) return s;
+      return null;
+    }
+    function nameOf(pid) { var p = state && state.players[pid]; return p ? p.name : 'Игрок'; }
+    function myTurn() {
+      var s = mySeat();
+      return connected && state && state.status === 'playing' && s && state.turnSeat === s;
+    }
+    function orientation() { var s = mySeat(); return s && s[0] === 'b' ? 'b' : 'w'; }
+
+    function onState() {
+      chess = new Chess(state.fen);
+      if (state.moves.length !== lastMoveCount) {
+        if (lastMoveCount >= 0 && state.moves.length > lastMoveCount) moveFeedback();
+        lastMoveCount = state.moves.length;
+        selected = null; targets = []; pendingPromo = null;
+      }
+      if (confirmKind === 'resign' && state.status !== 'playing') confirmKind = null;
+      render();
+      updateTitle();
+    }
+
+    function moveFeedback() {
+      var last = state.moves[state.moves.length - 1];
+      if (last && last.pid === you) return;
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.frequency.value = myTurn() ? 660 : 440; o.type = 'triangle';
+        g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.12, audioCtx.currentTime + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
+        o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.2);
+      } catch (e) { /* звук не обязателен */ }
+      if (myTurn() && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} }
+    }
+    function updateTitle() {
+      var base = 'Комната ' + roomId + ' — Шахматы 2 на 2';
+      document.title = myTurn() ? '● Ваш ход — ' + base : base;
+    }
+
+    // ---------- Отрисовка ----------
+    function render() {
+      if (!state) return;
+      renderSides(); renderBoard(); renderStatus(); renderActions(); renderMoves();
+    }
+
+    function renderSides() {
+      var bottom = orientation(), top = bottom === 'w' ? 'b' : 'w';
+      fillSide($('sideTop'), top);
+      fillSide($('sideBottom'), bottom);
+    }
+    function fillSide(box, side) {
+      box.textContent = '';
+      var label = el('div', 'side-label', SIDE_NAME[side]);
+      box.appendChild(label);
+      ['1', '2'].forEach(function (n) {
+        var seat = side + n, pid = state.seats[seat], card = el('div', 'seat');
+        var ord = el('span', 'ord', n); ord.title = 'Очерёдность внутри команды';
+        card.appendChild(ord);
+        var who = el('div', 'who');
+        if (!pid) {
+          card = el('button', 'seat empty');
+          card.type = 'button'; card.disabled = !connected;
+          card.setAttribute('aria-label', 'Сесть: ' + SIDE_NAME[side] + ', место ' + n);
+          card.onclick = function () { send({ t: 'sit', seat: seat }); };
+          card.appendChild(ord);
+          who.appendChild(el('span', 'nm', 'Сесть'));
+          card.appendChild(who);
+        } else {
+          var p = state.players[pid] || { name: 'Игрок', online: false };
+          if (pid === you) {
+            card.classList.add('me');
+            var nb = el('button', 'nm-btn nm', p.name); nb.type = 'button'; nb.title = 'Изменить имя';
+            nb.onclick = askName;
+            who.appendChild(nb);
+          } else who.appendChild(el('span', 'nm', p.name));
+          var sub = el('span', 'sub');
+          sub.appendChild(el('span', 'dot' + (p.online ? ' on' : '')));
+          sub.appendChild(document.createTextNode(state.turnSeat === seat ? 'ходит' : (p.online ? 'в игре' : 'не в сети')));
+          who.appendChild(sub);
+          card.appendChild(who);
+          if (pid === you) {
+            var st = el('button', 'btn small', 'Встать'); st.type = 'button';
+            st.onclick = function () { send({ t: 'stand' }); };
+            card.appendChild(st);
+          }
+        }
+        if (state.turnSeat === seat) card.classList.add('turn');
+        box.appendChild(card);
+      });
+    }
+
+    function squareName(f, r) { return 'abcdefgh'[f] + (r + 1); }
+
+    function renderBoard() {
+      var board = $('board'), flip = orientation() === 'b';
+      var last = state.moves[state.moves.length - 1];
+      var kingInCheck = null;
+      if (state.inCheck) {
+        var bd = chess.board();
+        var ki = bd.indexOf(state.turn + 'K');
+        if (ki >= 0) kingInCheck = squareName(ki & 7, ki >> 3);
+      }
+      var canMove = myTurn(), mySide = mySeat() ? mySeat()[0] : null;
+      var focusName = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.sq : null;
+      board.textContent = '';
+      for (var row = 0; row < 8; row++) {
+        for (var col = 0; col < 8; col++) {
+          var f = flip ? 7 - col : col, r = flip ? row : 7 - row;
+          var name = squareName(f, r);
+          var sq = el('button', 'sq' + ((f + r) % 2 === 0 ? ' dk' : ''));
+          sq.type = 'button'; sq.dataset.sq = name;
+          var pc = chess.get(name);
+          var label = name + (pc ? ', ' + (pc.color === 'w' ? 'белая' : 'чёрная') + ' фигура' : '');
+          sq.setAttribute('aria-label', label);
+          if (last && (last.from === name || last.to === name)) sq.classList.add('last');
+          if (selected === name) sq.classList.add('sel');
+          if (kingInCheck === name) sq.classList.add('check');
+          var tgt = targets.filter(function (t) { return t.to === name; })[0];
+          if (tgt) { sq.classList.add('tgt', 'can'); if (pc || tgt.flags === 'e') sq.classList.add('cap'); }
+          if (canMove && pc && pc.color === mySide) sq.classList.add('can');
+          if (pc) {
+            var g = el('span', 'pc ' + pc.color);
+            if (pc.color === 'w') { g.textContent = GLYPH_OUTLINE[pc.type] + VS; g.dataset.fill = GLYPH_SOLID[pc.type] + VS; }
+            else g.textContent = GLYPH_SOLID[pc.type] + VS;
+            sq.appendChild(g);
+          }
+          if (row === 7) sq.appendChild(el('span', 'coord f', 'abcdefgh'[f]));
+          if (col === 0) sq.appendChild(el('span', 'coord r', String(r + 1)));
+          sq.onclick = onSquare;
+          board.appendChild(sq);
+        }
+      }
+      if (pendingPromo) board.appendChild(promoPicker());
+      if (focusName) { var fe = board.querySelector('[data-sq="' + focusName + '"]'); if (fe) fe.focus(); }
+    }
+
+    function onSquare(e) {
+      var name = e.currentTarget.dataset.sq;
+      if (!myTurn()) {
+        if (state.status === 'playing' && mySeat()) toast('Сейчас ходит ' + nameOf(state.seats[state.turnSeat]));
+        return;
+      }
+      var mySide = mySeat()[0];
+      var tgt = targets.filter(function (t) { return t.to === name; });
+      if (selected && tgt.length) {
+        if (tgt.some(function (t) { return t.promotion; })) { pendingPromo = { from: selected, to: name }; return render(); }
+        send({ t: 'move', from: selected, to: name });
+        selected = null; targets = []; return render();
+      }
+      var pc = chess.get(name);
+      if (pc && pc.color === mySide && selected !== name) {
+        selected = name;
+        targets = chess.moves({ square: name, verbose: true });
+        if (!targets.length) toast('Этой фигуре некуда ходить');
+      } else { selected = null; targets = []; }
+      render();
+    }
+
+    function promoPicker() {
+      var side = mySeat()[0], wrap = el('div', 'promo'), box = el('div', 'promo-box');
+      box.appendChild(el('p', null, 'Во что превратить пешку?'));
+      var rowEl = el('div', 'promo-row');
+      [['q', 'Ферзь'], ['r', 'Ладья'], ['b', 'Слон'], ['n', 'Конь']].forEach(function (pair) {
+        var b = el('button'); b.type = 'button'; b.title = pair[1]; b.setAttribute('aria-label', pair[1]);
+        var g = el('span', 'pc ' + side);
+        if (side === 'w') { g.textContent = GLYPH_OUTLINE[pair[0]] + VS; g.dataset.fill = GLYPH_SOLID[pair[0]] + VS; }
+        else g.textContent = GLYPH_SOLID[pair[0]] + VS;
+        b.appendChild(g);
+        b.onclick = function () {
+          send({ t: 'move', from: pendingPromo.from, to: pendingPromo.to, promotion: pair[0] });
+          pendingPromo = null; selected = null; targets = []; render();
+        };
+        rowEl.appendChild(b);
+      });
+      box.appendChild(rowEl);
+      var cancel = el('button', 'btn small', 'Отмена'); cancel.type = 'button';
+      cancel.onclick = function () { pendingPromo = null; render(); };
+      box.appendChild(cancel);
+      wrap.appendChild(box);
+      return wrap;
+    }
+
+    function renderStatus() {
+      var box = $('status'), big, small = '', seat = mySeat();
+      box.className = 'status';
+      if (state.status === 'finished') {
+        var r = state.result, win = r.winner ? 'Победили ' + SIDE_NAME[r.winner] : '';
+        if (r.reason === 'checkmate') { big = 'Мат! ' + win; }
+        else if (r.reason === 'resign') { big = win; small = nameOf(r.by) + ' сдаётся.'; }
+        else {
+          big = 'Ничья';
+          small = { stalemate: 'Пат: ходить некуда, но шаха нет.', material: 'Ни у кого не хватает фигур, чтобы поставить мат.',
+            repetition: 'Позиция повторилась три раза.', fifty: '50 ходов подряд без взятий и ходов пешками.' }[r.reason] || '';
+        }
+        if (seat) small += (small ? ' ' : '') + 'Нажмите «Реванш», чтобы сыграть ещё — цвета поменяются.';
+      } else if (state.status === 'waiting') {
+        var needW = !state.seats.w1 && !state.seats.w2, needB = !state.seats.b1 && !state.seats.b2;
+        big = needW && needB ? 'Садитесь за доску' : 'Ждём игрока за ' + SIDE_GEN[needW ? 'w' : 'b'];
+        small = seat ? 'Скопируйте ссылку и отправьте друзьям. Партия начнётся, когда за каждой стороной будет хотя бы один игрок.'
+          : 'Выберите свободное место над или под доской.';
+      } else {
+        var ts = state.turnSeat, tn = nameOf(state.seats[ts]);
+        if (myTurn()) { big = 'Ваш ход'; box.classList.add('mine'); small = 'Вы играете за ' + SIDE_GEN[seat[0]] + '.'; }
+        else if (seat && seat[0] === ts[0]) { big = 'Ходит партнёр: ' + tn; small = 'Ваш ход будет через один.'; }
+        else { big = 'Ходит ' + tn; small = 'За ' + SIDE_GEN[ts[0]] + '.'; }
+        if (!seat) small += ' Вы смотрите партию.';
+      }
+      box.textContent = '';
+      box.appendChild(el('div', 'big', big));
+      if (state.inCheck && state.status === 'playing') box.appendChild(el('div', 'chk', 'Шах ' + (state.turn === 'w' ? 'белому' : 'чёрному') + ' королю!'));
+      if (small) box.appendChild(el('div', 'small', small));
+      if (!connected) box.appendChild(el('div', 'chk', 'Нет связи с сервером, переподключаемся…'));
+    }
+
+    function renderActions() {
+      var box = $('actions'), seat = mySeat();
+      box.textContent = '';
+      if (!seat) { $('confirm').hidden = true; return; }
+      if (state.status === 'playing') {
+        var rs = el('button', 'btn danger', 'Сдаться'); rs.type = 'button';
+        rs.onclick = function () { confirmKind = 'resign'; renderConfirm(); };
+        box.appendChild(rs);
+      }
+      if (state.status === 'finished' || state.moves.length) {
+        var ng = el('button', 'btn' + (state.status === 'finished' ? ' primary' : ''), state.status === 'finished' ? 'Реванш' : 'Начать заново');
+        ng.type = 'button';
+        ng.onclick = function () {
+          if (state.status === 'finished') send({ t: 'newgame' });
+          else { confirmKind = 'newgame'; renderConfirm(); }
+        };
+        box.appendChild(ng);
+      }
+      var nm = el('button', 'btn', 'Сменить имя'); nm.type = 'button'; nm.onclick = askName;
+      box.appendChild(nm);
+      renderConfirm();
+    }
+    function renderConfirm() {
+      var c = $('confirm');
+      if (!confirmKind || !mySeat()) { c.hidden = true; return; }
+      c.textContent = '';
+      c.appendChild(el('span', null, confirmKind === 'resign' ? 'Точно сдаться за всю команду?' : 'Начать заново? Текущая партия пропадёт.'));
+      var yes = el('button', 'btn small ' + (confirmKind === 'resign' ? 'danger' : 'primary'), confirmKind === 'resign' ? 'Сдаться' : 'Начать');
+      yes.type = 'button';
+      var kind = confirmKind;
+      yes.onclick = function () { send({ t: kind === 'resign' ? 'resign' : 'newgame' }); confirmKind = null; renderConfirm(); };
+      var no = el('button', 'btn small', 'Отмена'); no.type = 'button';
+      no.onclick = function () { confirmKind = null; renderConfirm(); };
+      c.appendChild(yes); c.appendChild(no);
+      c.hidden = false;
+    }
+
+    function renderMoves() {
+      var list = $('movelist'), mv = state.moves;
+      var atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 30;
+      list.textContent = '';
+      $('watchers').textContent = state.watchers ? 'зрителей: ' + state.watchers : '';
+      if (!mv.length) { list.appendChild(el('div', 'empty-moves', 'Партия ещё не началась. Первыми ходят белые.')); return; }
+      for (var i = 0; i < mv.length; i += 2) {
+        var row = el('div', 'mrow');
+        row.appendChild(el('span', 'n', (i / 2 + 1) + '.'));
+        [mv[i], mv[i + 1]].forEach(function (x) {
+          var cell = el('span', 'mv');
+          if (x) { cell.appendChild(el('b', null, x.san)); cell.appendChild(el('small', null, nameOf(x.pid))); }
+          row.appendChild(cell);
+        });
+        list.appendChild(row);
+      }
+      if (atBottom || mv.length === lastMoveCount) list.scrollTop = list.scrollHeight;
+    }
+  }
+})();
+</script>
+</body>
+</html>

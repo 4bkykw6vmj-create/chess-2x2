@@ -1,0 +1,12 @@
+{
+  "name": "chess-2x2",
+  "version": "1.0.0",
+  "description": "Шахматы 2 на 2: четыре игрока на одной доске, онлайн по ссылке",
+  "main": "server.js",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/rules.test.js && node test/play.test.js"
+  }
+}
